@@ -12,10 +12,10 @@ async def check():
     return{"message":"check route working"}
 
 @router.post("/upload")
-async def upload(file: UploadFile = File(...)):
+async def upload(email: str,file: UploadFile = File(...)):
 
-    response = await upload_file(file)
-    return{"response": response}
+    #response = await upload_file(file)
+    return await upload_file(email, file)
 
 @router.post("/chat")
 async def chat(q: query):

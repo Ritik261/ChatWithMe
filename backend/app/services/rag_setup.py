@@ -1,3 +1,4 @@
+from sqlalchemy import lambda_stmt
 from app.model.message_model import query
 from langchain_community.document_loaders import PyPDFLoader
 from langchain_text_splitters import RecursiveCharacterTextSplitter
@@ -51,15 +52,17 @@ async def rag_setup():
     def retrieve_context(input_data):
         query_text = input_data["query"]
         query_vector = embedding.embed_query(query_text)
+        email = input_data["email"]
         
         response = supabase.rpc(
             "match_documents",
             {
                 "query_embedding": query_vector,
+                "email": email,
                 "match_count": 5
             }
         ).execute()
-        print("########### retrieved responnse ######################", response.data)
+        print("########### Email ######################", email)
         if response.data:
             return "\n\n".join([doc.get("content", "") for doc in response.data])
         return ""
@@ -67,7 +70,8 @@ async def rag_setup():
     _chain = (
         {
             "context": retrieve_context,
-            "query": lambda x: x["query"]
+            "query": lambda x: x["query"],
+            "email": lambda x: x["email"]
         }
         | prompt
         | llm
@@ -80,7 +84,11 @@ async def query_rag(q: query):
     chain = await rag_setup()
     
     # Invoke the chain with the query string
-    response = await chain.ainvoke({"query": q.query})
+    response = await chain.ainvoke(
+        {
+            "query": q.query,
+            "email": q.email
+        })
     
     print("##################### Rag Result ############################", response)
 

@@ -4,4 +4,5 @@ class message(BaseModel):
     query:str 
 
 class query(BaseModel):
-    query:str
+    query: str
+    email: str

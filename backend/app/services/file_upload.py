@@ -13,9 +13,14 @@ import os, shutil
 UPLOAD_DIR = "uploads"
 os.makedirs(UPLOAD_DIR, exist_ok=True)
 
+async def upload_file(email, file):
 
+    type_of_data = file.content_type
 
-async def upload_file(file):
+    if (type_of_data != "application/pdf"):
+        
+        return {"message":"please upload a pdf only, we dont support images right now 😊"}
+       
    
     file_path = os.path.join(UPLOAD_DIR, file.filename)
 
@@ -43,19 +48,18 @@ async def upload_file(file):
 
     # vector store 
     # vectorstore = FAISS.from_documents(documents_chunks, embeddings)
-
     # vectorstore.save_local("faiss_index")
 
     texts = [doc.page_content for doc in documents_chunks]
-
     vectors = embeddings.embed_documents(texts)
-
     data = []
 
     for text, vector in zip(texts,vectors):
         data.append({
             "content":text,
             "embedding":vector,
+            "file_id": file_path,
+            "email": email,
             "metadata":{"source":file_path}
         })
 
@@ -64,8 +68,8 @@ async def upload_file(file):
     for i in range(0, len(data), BATCH_SIZE):
         supabase.table("documents").insert(data[i:i+BATCH_SIZE]).execute()   
 
-    return JSONResponse({
+    return {
         "filename":file.filename,
         "content_type": file.content_type,
         "message":"File upload & Index Created success ✨"
-    })
+    }
