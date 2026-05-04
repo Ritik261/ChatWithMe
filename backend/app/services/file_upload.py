@@ -1,12 +1,7 @@
-from langchain_community.embeddings.dashscope import BATCH_SIZE
-from h11._abnf import chunk_size
-from fastapi import File, UploadFile
-from fastapi.responses import JSONResponse
 from langchain_community.document_loaders import PyMuPDFLoader
 from langchain_openai import AzureOpenAIEmbeddings
 from app.services.rag_setup import set_uploaded_file
 from langchain_text_splitters import RecursiveCharacterTextSplitter
-from langchain_community.vectorstores import FAISS
 from app.services.supabase_client import supabase
 import os, shutil
 
@@ -38,7 +33,9 @@ async def upload_file(email, file):
     split = RecursiveCharacterTextSplitter(chunk_size=500, chunk_overlap=50)
     documents_chunks = split.split_documents(documents)
 
-    #embedding
+    print("document chunks", documents_chunks)
+
+    #openai embedding
     embeddings = AzureOpenAIEmbeddings(
         azure_deployment=os.getenv("AZURE_OPENAI_EMBEDDINGS_DEPLOYMENT"),
         azure_endpoint=os.getenv("AZURE_OPENAI_ENDPOINT"),
@@ -46,15 +43,32 @@ async def upload_file(email, file):
         api_version=os.getenv("api_version")
     )
 
+    # Google Embeddings
+    # model = os.getenv("GOOGLE_EMBEDDING_MODEL")
+    # google_embedding = GoogleGenerativeAIEmbeddings(
+    #     model=model,
+    #     output_dimensionality=1536
+    # )
+
     # vector store 
     # vectorstore = FAISS.from_documents(documents_chunks, embeddings)
     # vectorstore.save_local("faiss_index")
 
     texts = [doc.page_content for doc in documents_chunks]
+    print("############### Text ####################", texts)
+    #openai
+    #vectors = embeddings.embed_documents(texts)
+
+    #google
     vectors = embeddings.embed_documents(texts)
+    print("Len(vectors)", vectors)
     data = []
 
+    
+
     for text, vector in zip(texts,vectors):
+        # print("############### Text ####################", texts)
+        # print("############### Vector ####################", vector)
         data.append({
             "content":text,
             "embedding":vector,
@@ -62,6 +76,7 @@ async def upload_file(email, file):
             "email": email,
             "metadata":{"source":file_path}
         })
+    print("############### Data ####################", data)    
 
     BATCH_SIZE = 50
 
