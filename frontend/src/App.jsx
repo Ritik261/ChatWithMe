@@ -1,29 +1,69 @@
-import React, { useState } from 'react';
+import React from 'react';
+import { BrowserRouter as Router, Routes, Route, Navigate } from 'react-router-dom';
+import { SignedIn, SignedOut, RedirectToSignIn } from '@clerk/clerk-react';
 import Navbar from './components/Navbar';
-import Hero from './components/Hero';
-import UploadSection from './components/UploadSection';
-import ChatSection from './components/ChatSection';
 import Footer from './components/Footer';
+import HomePage from './pages/HomePage';
+import ChatPage from './pages/ChatPage';
+import UploadPage from './pages/UploadPage';
+import AboutPage from './pages/AboutPage';
 
 function App() {
-  const [userEmail, setUserEmail] = useState('');
-
-  const handleUploadSuccess = (email) => {
-    setUserEmail(email);
-    // Smooth scroll to chat section after successful upload
-    document.getElementById('chat')?.scrollIntoView({ behavior: 'smooth' });
-  };
-
   return (
-    <div className="min-h-screen font-sans selection:bg-indigo-100 selection:text-indigo-900">
-      <Navbar />
-      <main>
-        <Hero />
-        <UploadSection onUploadSuccess={handleUploadSuccess} />
-        <ChatSection userEmail={userEmail} />
-      </main>
-      <Footer />
-    </div>
+    <Router>
+      <div className="min-h-screen font-sans selection:bg-indigo-100 selection:text-indigo-900 flex flex-col">
+        <Navbar />
+        <main className="flex-grow">
+          <Routes>
+            <Route path="/" element={
+              <>
+              <HomePage />
+              <Footer />
+              </>
+              } />
+            <Route path="/about" element={
+
+              <>
+              <AboutPage />
+              <Footer />
+              </>
+            } />
+            
+            {/* Protected Routes */}
+            <Route 
+              path="/chat" 
+              element={
+                <>
+                  <SignedIn>
+                    <ChatPage />
+                  </SignedIn>
+                  <SignedOut>
+                    <RedirectToSignIn />
+                  </SignedOut>
+                </>
+              } 
+            />
+            <Route 
+              path="/upload" 
+              element={
+                <>
+                  <SignedIn>
+                    <UploadPage />
+                  </SignedIn>
+                  <SignedOut>
+                    <RedirectToSignIn />
+                  </SignedOut>
+                </>
+              } 
+            />
+
+            {/* Fallback */}
+            <Route path="*" element={<Navigate to="/" replace />} />
+          </Routes>
+        </main>
+        
+      </div>
+    </Router>
   );
 }
 

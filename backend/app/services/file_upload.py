@@ -67,8 +67,6 @@ async def upload_file(email, file):
     
 
     for text, vector in zip(texts,vectors):
-        # print("############### Text ####################", texts)
-        # print("############### Vector ####################", vector)
         data.append({
             "content":text,
             "embedding":vector,
@@ -76,7 +74,12 @@ async def upload_file(email, file):
             "email": email,
             "metadata":{"source":file_path}
         })
-    print("############### Data ####################", data)    
+    
+    # Debug: Print the first chunk to verify content is actual text
+    if data:
+        print(f"DEBUG: First chunk content preview: {data[0]['content'][:100]}...")
+    
+    print("############### Data ####################", len(data), "chunks")    
 
     BATCH_SIZE = 50
 

@@ -50,40 +50,51 @@ async def rag_setup():
 
     prompt = ChatPromptTemplate.from_template(
         """
-            You are an helpful assitant that answers from the provided context.
+            You are an helpful assistant that answers from the provided context.
             
             Context: {context}.
 
             query : {query}
 
-            return short, accurate answer only, no extra text.
+            if:
+                you dont have any context to answer means there is no docs uploaded, return you dont have Knowledge Source document context to answer, upload at least 1 document to continue
+            else - if:
+                there are uploaded files in db but the query does not match with any of the provided context then write "response is not provided in the uploaded documents"
+            else:
+                return details.
         """
     )
 
     def retrieve_context(input_data):
         query_text = input_data["query"]
+        email = input_data.get("email")
+        print("########## query ##########", query_text)
+        print("########## email ##########", email)
+        
         query_vector = embedding.embed_query(query_text)
         print("##### query Vector #########", len(query_vector))
-        email = input_data["email"]
         
         response = supabase.rpc(
             "match_documents",
             {
                 "query_embedding": query_vector,
-                "email": email,
-                "match_count":5
+                "filter_email": email,
+                "match_count": 5
             }
         ).execute()
-        print("########### Email ######################", email)
+        #print("########### Email ######################", email)
+
+        print("response", response)
+       
         if response.data:
             return "\n\n".join([doc.get("content", "") for doc in response.data])
         return ""
 
     _chain = (
-        {
-            "context": retrieve_context,
+        {            
             "query": lambda x: x["query"],
-            "email": lambda x: x["email"]
+            "context": retrieve_context
+
         }
         | prompt
         | google_llm

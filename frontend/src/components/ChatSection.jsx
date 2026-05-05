@@ -1,13 +1,34 @@
-import React, { useState } from 'react';
+import React, { useState, useEffect, useRef } from 'react';
 import { Send, User, Bot, Loader2 } from 'lucide-react';
 import axios from 'axios';
+import ReactMarkdown from 'react-markdown';
+import remarkGfm from 'remark-gfm';
+
+
 
 const ChatSection = ({ userEmail }) => {
+
+  const api = axios.create({
+    baseURL: import.meta.env.VITE_BACKEND_URL
+  })
   const [query, setQuery] = useState('');
+
   const [messages, setMessages] = useState([
-    { role: 'bot', text: 'Hello! I am your AI assistant. Upload a PDF above and ask me anything about it.' }
+    { 
+      role: 'bot', 
+      text: "Welcome! I'm Rekha here to help you chat with your uploaded documents. Feel free to ask any questions ?" 
+    }
   ]);
   const [loading, setLoading] = useState(false);
+  const messagesEndRef = useRef(null);
+
+  const scrollToBottom = () => {
+    messagesEndRef.current?.scrollIntoView({ behavior: "smooth" });
+  };
+
+  useEffect(() => {
+    scrollToBottom();
+  }, [messages]);
 
   const handleSend = async (e) => {
     e.preventDefault();
@@ -19,7 +40,7 @@ const ChatSection = ({ userEmail }) => {
     setLoading(true);
 
     try {
-      const response = await axios.post('http://localhost:8000/chat', {
+      const response = await api.post('/chat', {
         query: query,
         email: userEmail
       });
@@ -35,67 +56,85 @@ const ChatSection = ({ userEmail }) => {
   };
 
   return (
-    <section id="chat" className="py-24 bg-gray-50 border-y border-gray-100">
-      <div className="max-w-4xl mx-auto px-4">
-        <div className="text-center mb-12">
-          <h2 className="text-3xl font-bold text-gray-900 mb-4">Chat with Knowledge</h2>
-          <p className="text-gray-500">Ask questions and get instant answers from your documents.</p>
-        </div>
-
-        <div className="bg-white rounded-3xl shadow-xl shadow-gray-200 border border-gray-100 flex flex-col h-[600px] overflow-hidden">
-          {/* Header */}
-          <div className="p-4 border-b border-gray-50 bg-white flex items-center gap-3">
-            <div className="w-2 h-2 bg-green-500 rounded-full animate-pulse"></div>
-            <span className="text-sm font-semibold text-gray-700">AI Knowledge Base {userEmail && `(${userEmail})`}</span>
-          </div>
-
-          {/* Messages */}
-          <div className="flex-1 overflow-y-auto p-6 space-y-6">
-            {messages.map((msg, idx) => (
-              <div key={idx} className={`flex gap-4 ${msg.role === 'user' ? 'flex-row-reverse' : ''}`}>
-                <div className={`w-10 h-10 rounded-2xl flex items-center justify-center shrink-0 ${msg.role === 'user' ? 'bg-indigo-600 text-white' : 'bg-gray-100 text-indigo-600'}`}>
-                  {msg.role === 'user' ? <User size={20} /> : <Bot size={20} />}
-                </div>
-                <div className={`max-w-[80%] p-4 rounded-2xl text-sm leading-relaxed ${msg.role === 'user' ? 'bg-indigo-600 text-white rounded-tr-none' : 'bg-gray-100 text-gray-700 rounded-tl-none'}`}>
-                  {msg.text}
-                </div>
+    <div className="flex flex-col h-full w-full bg-white relative">
+      {/* Messages Area */}
+      <div className="flex-1 overflow-y-auto px-4 md:px-0 py-8 scrollbar-hide">
+        <div className="max-w-3xl mx-auto space-y-8">
+          {messages.map((msg, idx) => (
+            <div key={idx} className={`flex gap-4 ${msg.role === 'user' ? 'flex-row-reverse' : ''} animate-fade-in`}>
+              <div className={`w-8 h-8 rounded-full flex items-center justify-center shrink-0 shadow-sm ${
+                msg.role === 'user' ? 'bg-indigo-600 text-white' : 'bg-gray-100 text-indigo-600'
+              }`}>
+                {msg.role === 'user' ? <User size={16} /> : <Bot size={16} />}
               </div>
-            ))}
-            {loading && (
-              <div className="flex gap-4">
-                <div className="w-10 h-10 rounded-2xl bg-gray-100 text-indigo-600 flex items-center justify-center">
-                  <Bot size={20} />
+              
+              <div className={`flex flex-col max-w-[85%] ${msg.role === 'user' ? 'items-end' : 'items-start'}`}>
+                <div className={`p-4 rounded-2xl text-[15px] leading-relaxed ${
+                  msg.role === 'user' 
+                    ? 'bg-indigo-600 text-white rounded-tr-none shadow-md' 
+                    : 'bg-gray-50 text-gray-800 rounded-tl-none border border-gray-100'
+                }`}>
+                  <ReactMarkdown 
+                    remarkPlugins={[remarkGfm]}
+                    components={{
+                      p: ({node, ...props}) => <p className="mb-2 last:mb-0" {...props} />,
+                      ul: ({node, ...props}) => <ul className="list-disc ml-4 mb-2" {...props} />,
+                      ol: ({node, ...props}) => <ol className="list-decimal ml-4 mb-2" {...props} />,
+                      li: ({node, ...props}) => <li className="mb-1" {...props} />,
+                      strong: ({node, ...props}) => <strong className="font-bold text-indigo-900" {...props} />
+                    }}
+                  >
+                    {msg.text}
+                  </ReactMarkdown>
                 </div>
-                <div className="bg-gray-100 p-4 rounded-2xl rounded-tl-none">
-                  <Loader2 className="animate-spin text-indigo-600" size={20} />
-                </div>
+                <span className="text-[10px] text-gray-400 mt-1 px-1">
+                  {msg.role === 'user' ? 'You' : 'AI Assistant'}
+                </span>
               </div>
-            )}
-          </div>
-
-          {/* Input */}
-          <form onSubmit={handleSend} className="p-6 bg-white border-t border-gray-50">
-            <div className="relative">
-              <input 
-                type="text"
-                value={query}
-                onChange={(e) => setQuery(e.target.value)}
-                placeholder={userEmail ? "Ask a question..." : "Please upload a file first"}
-                disabled={!userEmail || loading}
-                className="w-full pl-4 pr-14 py-4 rounded-2xl border border-gray-200 focus:ring-2 focus:ring-indigo-500 focus:border-indigo-500 outline-none disabled:bg-gray-50"
-              />
-              <button 
-                type="submit"
-                disabled={!userEmail || loading || !query.trim()}
-                className="absolute right-2 top-2 bottom-2 px-4 bg-indigo-600 text-white rounded-xl hover:bg-indigo-700 transition-all disabled:bg-gray-300"
-              >
-                <Send size={18} />
-              </button>
             </div>
-          </form>
+          ))}
+          
+          {loading && (
+            <div className="flex gap-4 animate-pulse">
+              <div className="w-8 h-8 rounded-full bg-gray-100 text-indigo-600 flex items-center justify-center">
+                <Bot size={16} />
+              </div>
+              <div className="bg-gray-50 p-4 rounded-2xl rounded-tl-none border border-gray-100 flex items-center gap-2">
+                <Loader2 className="animate-spin text-indigo-400" size={16} />
+                <span className="text-sm text-gray-400 italic">Thinking...</span>
+              </div>
+            </div>
+          )}
+          <div ref={messagesEndRef} />
         </div>
       </div>
-    </section>
+
+      {/* Fixed Input Area at Bottom */}
+      <div className="border-t border-gray-100 bg-white/80 backdrop-blur-md p-4 sticky bottom-0">
+        <div className="max-w-3xl mx-auto relative">
+          <form onSubmit={handleSend} className="relative group">
+            <input 
+              type="text"
+              value={query}
+              onChange={(e) => setQuery(e.target.value)}
+              placeholder={userEmail ? "Ask me anything about your documents..." : "Please log in to chat"}
+              disabled={!userEmail || loading}
+              className="w-full pl-6 pr-14 py-4 rounded-2xl bg-gray-50 border border-gray-200 focus:bg-white focus:ring-2 focus:ring-indigo-500 focus:border-indigo-500 outline-none transition-all shadow-sm group-hover:shadow-md"
+            />
+            <button 
+              type="submit"
+              disabled={!userEmail || loading || !query.trim()}
+              className="absolute right-2 top-2 bottom-2 px-4 bg-indigo-600 text-white rounded-xl hover:bg-indigo-700 transition-all disabled:bg-gray-200 disabled:cursor-not-allowed shadow-sm active:scale-95"
+            >
+              {loading ? <Loader2 className="animate-spin" size={18} /> : <Send size={18} />}
+            </button>
+          </form>
+          <p className="text-[10px] text-center text-gray-400 mt-2">
+            AI can make mistakes. Consider checking important information.
+          </p>
+        </div>
+      </div>
+    </div>
   );
 };
 
