@@ -46,13 +46,6 @@ const UploadSection = ({ onUploadSuccess }) => {
   return (
     <section className="py-12 bg-white rounded-3xl shadow-sm border border-gray-100">
       <div className="max-w-4xl mx-auto px-4">
-        <div className="text-center mb-10">
-          <h2 className="text-3xl font-bold text-gray-900 mb-3">Upload your PDF</h2>
-          <p className="text-gray-500">
-            Authenticated as <span className="font-semibold text-indigo-600">{email}</span>
-          </p>
-        </div>
-
         <form onSubmit={handleUpload} className="bg-gray-50 rounded-2xl p-6 lg:p-10 border-2 border-dashed border-gray-200 hover:border-indigo-400 transition-colors">
           <div className="grid gap-6">
             <div className="relative group">
