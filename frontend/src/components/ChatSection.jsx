@@ -4,10 +4,7 @@ import axios from 'axios';
 import ReactMarkdown from 'react-markdown';
 import remarkGfm from 'remark-gfm';
 
-
-
 const ChatSection = ({ userEmail }) => {
-
   const api = axios.create({
     baseURL: import.meta.env.VITE_BACKEND_URL
   })
@@ -139,3 +136,5 @@ const ChatSection = ({ userEmail }) => {
 };
 
 export default ChatSection;
+
+
