@@ -1,6 +1,6 @@
 from app.model.message_model import query
 from langchain_openai import AzureOpenAIEmbeddings
-from langchain_google_genai import ChatGoogleGenerativeAI
+from langchain_google_genai import ChatGoogleGenerativeAI, GoogleGenerativeAIEmbeddings
 from langchain_core.prompts import ChatPromptTemplate
 from langchain_core.output_parsers import StrOutputParser
 from app.services.supabase_client import supabase
@@ -19,12 +19,12 @@ def set_uploaded_file(path: str):
 async def rag_setup():
     # openai embeddings
 
-    embedding = AzureOpenAIEmbeddings(
-        azure_endpoint=os.getenv("AZURE_OPENAI_ENDPOINT"),
-        azure_deployment=os.getenv("AZURE_OPENAI_EMBEDDINGS_DEPLOYMENT"),
-        api_key=os.getenv("AZURE_OPENAI_EMBEDDINGS_API_KEY"),
-        api_version=os.getenv("api_version")
-    )
+    # embedding = AzureOpenAIEmbeddings(
+    #     azure_endpoint=os.getenv("AZURE_OPENAI_ENDPOINT"),
+    #     azure_deployment=os.getenv("AZURE_OPENAI_EMBEDDINGS_DEPLOYMENT"),
+    #     api_key=os.getenv("AZURE_OPENAI_EMBEDDINGS_API_KEY"),
+    #     api_version=os.getenv("api_version")
+    # )
 
     # llm = AzureChatOpenAI(
     #     azure_endpoint=os.getenv("AZURE_OPENAI_ENDPOINT"),
@@ -38,10 +38,10 @@ async def rag_setup():
 
     ################### Google Chat & Embedding Models ######################
 
-    # google_embedding = GoogleGenerativeAIEmbeddings(
-    #     model= os.getenv("GOOGLE_EMBEDDING_MODEL"),
-    #     output_dimensionality=1536
-    # )
+    google_embedding = GoogleGenerativeAIEmbeddings(
+        model= os.getenv("GOOGLE_EMBEDDING_MODEL"),
+        output_dimensionality=1536
+    )
 
     google_llm = ChatGoogleGenerativeAI(
         model = os.getenv("GOOGLE_CHAT_MODEL")
@@ -71,7 +71,8 @@ async def rag_setup():
         print("########## query ##########", query_text)
         print("########## email ##########", email)
         
-        query_vector = embedding.embed_query(query_text)
+        # query_vector = embedding.embed_query(query_text)
+        query_vector = google_embedding.embed_query(query_text, output_dimensionality=1536)
         print("##### query Vector #########", len(query_vector))
         
         response = supabase.rpc(

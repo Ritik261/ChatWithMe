@@ -1,5 +1,6 @@
 from langchain_community.document_loaders import PyMuPDFLoader
 from langchain_openai import AzureOpenAIEmbeddings
+from langchain_google_genai import GoogleGenerativeAIEmbeddings
 from app.services.rag_setup import set_uploaded_file
 from langchain_text_splitters import RecursiveCharacterTextSplitter
 from app.services.supabase_client import supabase
@@ -14,7 +15,7 @@ async def upload_file(email, file):
 
     if (type_of_data != "application/pdf"):
         
-        return {"message":"please upload a pdf only, we dont support images right now 😊"}
+        return {"message":"please upload a pdf only, we dont support doc or images right now 😊"}
        
    
     file_path = os.path.join(UPLOAD_DIR, file.filename)
@@ -36,19 +37,19 @@ async def upload_file(email, file):
     print("document chunks", documents_chunks)
 
     #openai embedding
-    embeddings = AzureOpenAIEmbeddings(
-        azure_deployment=os.getenv("AZURE_OPENAI_EMBEDDINGS_DEPLOYMENT"),
-        azure_endpoint=os.getenv("AZURE_OPENAI_ENDPOINT"),
-        api_key=os.getenv("AZURE_OPENAI_EMBEDDINGS_API_KEY"),
-        api_version=os.getenv("api_version")
-    )
+    # embeddings = AzureOpenAIEmbeddings(
+    #     azure_deployment=os.getenv("AZURE_OPENAI_EMBEDDINGS_DEPLOYMENT"),
+    #     azure_endpoint=os.getenv("AZURE_OPENAI_ENDPOINT"),
+    #     api_key=os.getenv("AZURE_OPENAI_EMBEDDINGS_API_KEY"),
+    #     api_version=os.getenv("api_version")
+    # )
 
     # Google Embeddings
-    # model = os.getenv("GOOGLE_EMBEDDING_MODEL")
-    # google_embedding = GoogleGenerativeAIEmbeddings(
-    #     model=model,
-    #     output_dimensionality=1536
-    # )
+    model = os.getenv("GOOGLE_EMBEDDING_MODEL")
+    google_embedding = GoogleGenerativeAIEmbeddings(
+        model=model,
+        output_dimensionality=1536
+    )
 
     # vector store 
     # vectorstore = FAISS.from_documents(documents_chunks, embeddings)
@@ -60,7 +61,8 @@ async def upload_file(email, file):
     #vectors = embeddings.embed_documents(texts)
 
     #google
-    vectors = embeddings.embed_documents(texts)
+    # vectors = embeddings.embed_documents(texts)
+    vectors = google_embedding.embed_documents(texts)
     print("Len(vectors)", vectors)
     data = []
 
