@@ -1,6 +1,7 @@
 import React from 'react';
 import Hero from '../components/Hero';
 import { motion } from 'framer-motion';
+import { Link } from 'react-router-dom';
 import { Shield, Zap, Globe, MessageSquare } from 'lucide-react';
 
 const HomePage = () => {
@@ -43,7 +44,7 @@ const HomePage = () => {
             </p>
           </div>
 
-          <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-8">
+          <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-8" id = "ai_features">
             {features.map((feature, index) => (
               <motion.div
                 key={index}
@@ -73,9 +74,9 @@ const HomePage = () => {
           <p className="text-indigo-100 text-lg mb-10">
             Join thousands of users who are already saving time and learning faster.
           </p>
-          <button className="px-8 py-4 bg-white text-indigo-600 font-bold rounded-xl hover:bg-indigo-50 transition-all shadow-xl">
+          <Link to="/upload" className="px-8 py-4 bg-white text-indigo-600 font-bold rounded-xl hover:bg-indigo-50 transition-all shadow-xl" >
             Start Uploading Now
-          </button>
+          </Link>
         </div>
       </section>
     </div>
