@@ -1,10 +1,13 @@
 from langchain_community.document_loaders import PyMuPDFLoader
-from langchain_openai import AzureOpenAIEmbeddings
+from langchain_openai import AzureOpenAIEmbeddings, OpenAIEmbeddings
 from langchain_google_genai import GoogleGenerativeAIEmbeddings
-from app.services.rag_setup import set_uploaded_file
+from app.services.rag_setup import set_uploaded_file, limiter
 from langchain_text_splitters import RecursiveCharacterTextSplitter
 from app.services.supabase_client import supabase
 import os, shutil
+# from dotenv import load_dotenv
+
+# load_dotenv()
 
 UPLOAD_DIR = "uploads"
 os.makedirs(UPLOAD_DIR, exist_ok=True)
@@ -34,7 +37,7 @@ async def upload_file(email, file):
     split = RecursiveCharacterTextSplitter(chunk_size=500, chunk_overlap=50)
     documents_chunks = split.split_documents(documents)
 
-    print("document chunks", documents_chunks)
+    # print("document chunks", documents_chunks)
 
     #openai embedding
     # embeddings = AzureOpenAIEmbeddings(
@@ -44,26 +47,34 @@ async def upload_file(email, file):
     #     api_version=os.getenv("api_version")
     # )
 
-    # Google Embeddings
-    model = os.getenv("GOOGLE_EMBEDDING_MODEL")
-    google_embedding = GoogleGenerativeAIEmbeddings(
-        model=model,
-        output_dimensionality=1536
+    embeddings = OpenAIEmbeddings(
+        model="text-embedding-3-small",
+        dimensions = 1536,
+        base_url = os.getenv("OPENAI_BASE_URL"),
+        api_key = os.getenv("OPENAI_API_KEY")
     )
+
+    # Google Embeddings
+    # model = os.getenv("GOOGLE_EMBEDDING_MODEL")
+    # google_embedding = GoogleGenerativeAIEmbeddings(
+    #     model=model,
+    #     output_dimensionality=1536
+    # )
 
     # vector store 
     # vectorstore = FAISS.from_documents(documents_chunks, embeddings)
     # vectorstore.save_local("faiss_index")
 
     texts = [doc.page_content for doc in documents_chunks]
-    print("############### Text ####################", texts)
+    # print("############### Text ####################", texts)
     #openai
     #vectors = embeddings.embed_documents(texts)
 
     #google
-    # vectors = embeddings.embed_documents(texts)
-    vectors = google_embedding.embed_documents(texts)
-    print("Len(vectors)", vectors)
+    async with limiter:
+        vectors = await embeddings.aembed_documents(texts)
+    # vectors = google_embedding.embed_documents(texts)
+    # print("Len(vectors)", len(vectors))
     data = []
 
     
@@ -81,7 +92,7 @@ async def upload_file(email, file):
     if data:
         print(f"DEBUG: First chunk content preview: {data[0]['content'][:100]}...")
     
-    print("############### Data ####################", len(data), "chunks")    
+    # print("############### Data ####################", len(data), "chunks")    
 
     BATCH_SIZE = 50
 

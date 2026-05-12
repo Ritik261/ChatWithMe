@@ -1,12 +1,15 @@
 from app.model.message_model import query
-from langchain_openai import AzureOpenAIEmbeddings
+from langchain_openai import AzureOpenAIEmbeddings, OpenAIEmbeddings, ChatOpenAI
 from langchain_google_genai import ChatGoogleGenerativeAI, GoogleGenerativeAIEmbeddings
 from langchain_core.prompts import ChatPromptTemplate
 from langchain_core.output_parsers import StrOutputParser
 from app.services.supabase_client import supabase
 import os
 from dotenv import load_dotenv
+from aiolimiter import AsyncLimiter
 load_dotenv()
+
+limiter = AsyncLimiter(2, 60)
 
 UPLOADED_FILE = "uploads/Sample_Resume_Ritik_Singh.pdf"
 _chain = None
@@ -34,19 +37,32 @@ async def rag_setup():
     #     temperature=0
     # )
 
+    ##################### Github Models ###################################
 
+    llm_openai = ChatOpenAI(
+        api_key=os.getenv("OPENAI_API_KEY"),
+        base_url=os.getenv("OPENAI_BASE_URL"),
+        model="gpt-4o"
+    )
+
+    embedding = OpenAIEmbeddings(
+        api_key=os.getenv("OPENAI_API_KEY"),
+        base_url=os.getenv("OPENAI_BASE_URL"),
+        dimensions = 1536,
+        model="text-embedding-3-small"
+    )
 
     ################### Google Chat & Embedding Models ######################
 
-    google_embedding = GoogleGenerativeAIEmbeddings(
-        model= os.getenv("GOOGLE_EMBEDDING_MODEL"),
-        output_dimensionality=1536
-    )
+    # google_embedding = GoogleGenerativeAIEmbeddings(
+    #     model= os.getenv("GOOGLE_EMBEDDING_MODEL"),
+    #     output_dimensionality=1536
+    # )
 
-    google_llm = ChatGoogleGenerativeAI(
-        model = os.getenv("GOOGLE_CHAT_MODEL")
+    # google_llm = ChatGoogleGenerativeAI(
+    #     model = os.getenv("GOOGLE_CHAT_MODEL")
         
-    )
+    # )
 
     prompt = ChatPromptTemplate.from_template(
         """
@@ -68,12 +84,12 @@ async def rag_setup():
     def retrieve_context(input_data):
         query_text = input_data["query"]
         email = input_data.get("email")
-        print("########## query ##########", query_text)
-        print("########## email ##########", email)
+        # print("########## query ##########", query_text)
+        # print("########## email ##########", email)
         
         # query_vector = embedding.embed_query(query_text)
-        query_vector = google_embedding.embed_query(query_text, output_dimensionality=1536)
-        print("##### query Vector #########", len(query_vector))
+        query_vector = embedding.embed_query(query_text)
+        # print("##### query Vector #########", len(query_vector))
         
         response = supabase.rpc(
             "match_documents",
@@ -85,7 +101,7 @@ async def rag_setup():
         ).execute()
         #print("########### Email ######################", email)
 
-        print("response", response)
+        # print("response", response)
        
         if response.data:
             return "\n\n".join([doc.get("content", "") for doc in response.data])
@@ -98,7 +114,7 @@ async def rag_setup():
 
         }
         | prompt
-        | google_llm
+        | llm_openai
         | StrOutputParser()
     )
 
@@ -108,12 +124,13 @@ async def query_rag(q: query):
     chain = await rag_setup()
     
     # Invoke the chain with the query string
-    response = await chain.ainvoke(
-        {
-            "query": q.query,
-            "email": q.email
-        })
+    async with limiter:
+        response = await chain.ainvoke(
+            {
+                "query": q.query,
+                "email": q.email
+            })
     
-    print("##################### Rag Result ############################", response)
+    # print("##################### Rag Result ############################", response)
 
     return {"answer": response}

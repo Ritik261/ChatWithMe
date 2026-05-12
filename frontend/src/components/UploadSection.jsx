@@ -10,6 +10,7 @@ const UploadSection = ({ onUploadSuccess }) => {
   const [status, setStatus] = useState(null);
   const { user } = useUser();
   const navigate = useNavigate();
+  
   const api = axios.create({
     baseURL: import.meta.env.VITE_BACKEND_URL
   })
