@@ -26,7 +26,7 @@ const UploadSection = ({ onUploadSuccess }) => {
     
     try {
       // Note: In a real app, you should use environment variables for the API URL
-      const response = await api.post(`/upload?email=${email}`, formData, {
+      const response = await api.post(`/upload?email=${encodeURIComponent(email)}`, formData, {
         headers: { 'Content-Type': 'multipart/form-data' }
       });
       setStatus('success');

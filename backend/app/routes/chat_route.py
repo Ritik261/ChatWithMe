@@ -13,11 +13,11 @@ async def check():
 
 @router.post("/upload")
 async def upload(email: str,file: UploadFile = File(...)):
-
-    #response = await upload_file(file)
-    return await upload_file(email, file)
+    normalized_email = email.strip().lower()
+    return await upload_file(normalized_email, file)
 
 @router.post("/chat")
 async def chat(q: query):
+    q.email = q.email.strip().lower()
     ans = await query_rag(q)
     return ans

@@ -1,5 +1,5 @@
 from app.model.message_model import query
-from langchain_openai import AzureOpenAIEmbeddings, OpenAIEmbeddings, ChatOpenAI
+from langchain_openai import AzureOpenAIEmbeddings, OpenAIEmbeddings, ChatOpenAI, AzureChatOpenAI
 from langchain_google_genai import ChatGoogleGenerativeAI, GoogleGenerativeAIEmbeddings
 from langchain_core.prompts import ChatPromptTemplate
 from langchain_core.output_parsers import StrOutputParser
@@ -29,27 +29,34 @@ async def rag_setup():
     #     api_version=os.getenv("api_version")
     # )
 
-    # llm = AzureChatOpenAI(
-    #     azure_endpoint=os.getenv("AZURE_OPENAI_ENDPOINT"),
-    #     api_key=os.getenv("AZURE_OPENAI_API_KEY"),
-    #     azure_deployment=os.getenv("AZURE_OPENAI_CHAT_DEPLOYMENT"),
-    #     api_version=os.getenv("api_version"),
-    #     temperature=0
-    # )
+    llm_openai = AzureChatOpenAI(
+        azure_endpoint=os.getenv("AZURE_OPENAI_ENDPOINT"),
+        api_key=os.getenv("AZURE_OPENAI_API_KEY"),
+        azure_deployment=os.getenv("AZURE_OPENAI_CHAT_DEPLOYMENT"),
+        api_version=os.getenv("api_version"),
+        temperature=1
+    )
 
     ##################### Github Models ###################################
 
-    llm_openai = ChatOpenAI(
-        api_key=os.getenv("OPENAI_API_KEY"),
-        base_url=os.getenv("OPENAI_BASE_URL"),
-        model="gpt-4o"
-    )
+    # llm_openai = ChatOpenAI(
+    #     api_key=os.getenv("OPENAI_API_KEY"),
+    #     base_url=os.getenv("OPENAI_BASE_URL"),
+    #     model="gpt-4o"
+    # )
 
-    embedding = OpenAIEmbeddings(
-        api_key=os.getenv("OPENAI_API_KEY"),
-        base_url=os.getenv("OPENAI_BASE_URL"),
-        dimensions = 1536,
-        model="text-embedding-3-small"
+    # embedding = OpenAIEmbeddings(
+    #     api_key=os.getenv("OPENAI_API_KEY"),
+    #     base_url=os.getenv("OPENAI_BASE_URL"),
+    #     dimensions = 1536,
+    #     model="text-embedding-3-small"
+    # )
+
+    embedding = AzureOpenAIEmbeddings(
+        azure_deployment=os.getenv("AZURE_OPENAI_EMBEDDINGS_DEPLOYMENT"),
+        azure_endpoint=os.getenv("AZURE_OPENAI_ENDPOINT"),
+        api_key=os.getenv("AZURE_OPENAI_API_KEY"),
+        api_version=os.getenv("api_version")
     )
 
     ################### Google Chat & Embedding Models ######################
@@ -83,13 +90,11 @@ async def rag_setup():
 
     def retrieve_context(input_data):
         query_text = input_data["query"]
-        email = input_data.get("email")
-        # print("########## query ##########", query_text)
-        # print("########## email ##########", email)
+        email = input_data.get("email", "").strip().lower()
         
-        # query_vector = embedding.embed_query(query_text)
+        # print(f"DEBUG: Retrieving context for email: '{email}'")
+        
         query_vector = embedding.embed_query(query_text)
-        # print("##### query Vector #########", len(query_vector))
         
         response = supabase.rpc(
             "match_documents",
@@ -104,6 +109,7 @@ async def rag_setup():
         # print("response", response)
        
         if response.data:
+            print("### Response ####", response.data)
             return "\n\n".join([doc.get("content", "") for doc in response.data])
         return ""
 

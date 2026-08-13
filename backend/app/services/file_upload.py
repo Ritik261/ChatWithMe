@@ -40,19 +40,19 @@ async def upload_file(email, file):
     # print("document chunks", documents_chunks)
 
     #openai embedding
-    # embeddings = AzureOpenAIEmbeddings(
-    #     azure_deployment=os.getenv("AZURE_OPENAI_EMBEDDINGS_DEPLOYMENT"),
-    #     azure_endpoint=os.getenv("AZURE_OPENAI_ENDPOINT"),
-    #     api_key=os.getenv("AZURE_OPENAI_EMBEDDINGS_API_KEY"),
-    #     api_version=os.getenv("api_version")
-    # )
-
-    embeddings = OpenAIEmbeddings(
-        model="text-embedding-3-small",
-        dimensions = 1536,
-        base_url = os.getenv("OPENAI_BASE_URL"),
-        api_key = os.getenv("OPENAI_API_KEY")
+    embeddings = AzureOpenAIEmbeddings(
+        azure_deployment=os.getenv("AZURE_OPENAI_EMBEDDINGS_DEPLOYMENT"),
+        azure_endpoint=os.getenv("AZURE_OPENAI_ENDPOINT"),
+        api_key=os.getenv("AZURE_OPENAI_API_KEY"),
+        api_version=os.getenv("api_version")
     )
+
+    # embeddings = OpenAIEmbeddings(
+    #     model="text-embedding-3-small",
+    #     dimensions = 1536,
+    #     base_url = os.getenv("OPENAI_BASE_URL"),
+    #     api_key = os.getenv("OPENAI_API_KEY")
+    # )
 
     # Google Embeddings
     # model = os.getenv("GOOGLE_EMBEDDING_MODEL")
